@@ -5,13 +5,7 @@ if(NOT Boost_USE_STATIC_LIBS)
 endif()
 
 set(tests
-  "errc"
-  "algorithm"
-  "datetime"
-  "mocksocket"
-  "socket"
-  "traits"
-  "file_server"
+  "boosttest"
 )
 
 macro(add_test_target target)
