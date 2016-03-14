@@ -1,5 +1,6 @@
 set(examples
   "spawn"
+  "router"
 )
 
 macro(add_example_target target)
