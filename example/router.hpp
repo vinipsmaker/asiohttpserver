@@ -11,20 +11,19 @@
 #include <functional>
 #include <string>
 #include <regex>
+#include <tuple>
 
 #include <boost/http/headers.hpp>
 #include <boost/http/traits.hpp>
 
-struct my_message_t
+namespace boost {
+namespace http {
+
+template<class Headers, class Body, class... Tail>
+struct declare_message
 {
-    // ### HTTP ROUTER MESSAGE CONCEPT (should be hidden to the end user) ###
-
-    // should be unspecified and hard to access unintentionally
-    void *handler_index = NULL;
-
-    // ### THE MESSAGE CONCEPT: ###
-    typedef boost::http::headers headers_type;
-    typedef std::vector<std::uint8_t> body_type;
+    typedef Headers headers_type;
+    typedef Body body_type;
 
     headers_type &headers() { return headers_; }
 
@@ -38,25 +37,26 @@ struct my_message_t
 
     const headers_type &trailers() const { return trailers_; }
 
+    std::tuple<typename Tail::type...> stub; // blob, dummy...?
+
 private:
     headers_type headers_;
     body_type body_;
     headers_type trailers_;
 };
 
-namespace boost {
-namespace http {
-
-template<>
-struct is_message<my_message_t>: public std::true_type {};
-
-/* This type-erased functor is note needed. I'm only using it for now to
-   simplify declarations. I intend to remove it later. */
-typedef std::function<void()> handler;
+template<class Headers, class Body, class... T>
+struct is_message<declare_message<Headers, Body, T...>>: public std::true_type
+{};
 
 namespace static_router {
 
 namespace detail {
+
+struct router_indexer
+{
+    void *handler_index = NULL;
+};
 
 template<class Message>
 class searcher
@@ -64,6 +64,30 @@ class searcher
 public:
     virtual void do_thing(std::string url, Message &imessage) = 0;
 };
+
+template<class T, size_t Idx, class T1, class... Types>
+struct tuple_get_impl
+{
+    static constexpr size_t result = tuple_get_impl<T, Idx + 1, Types...>::result;
+};
+
+template<class T, size_t Idx, class... Types>
+struct tuple_get_impl<T, Idx, T, Types...>
+{
+    static constexpr size_t result = Idx;
+};
+
+template<class T, class... Types>
+T& tuple_get(std::tuple<Types...> &t)
+{
+    return std::get<tuple_get_impl<T, 0, Types...>::result>(t);
+}
+
+template<class M>
+void*& get_handler_index(M &imessage)
+{
+    return tuple_get<router_indexer>(imessage.stub).handler_index;
+}
 
 template<class M, size_t idx, class F, class NextRouter>
 struct router
@@ -94,7 +118,7 @@ struct router
             return next_router.do_easy_thing(url, imessage);
         }
 
-        imessage.handler_index = static_cast<searcher<M>*>(&our_searcher);
+        get_handler_index(imessage) = static_cast<searcher<M>*>(&our_searcher);
         functor(url, imessage);
     }
 
@@ -139,6 +163,11 @@ struct router<M, 0, void, void>
 
 } // namespace detail {
 
+struct with_index
+{
+    typedef detail::router_indexer type;
+};
+
 template<class M>
 detail::router<M, 0, void, void> make()
 {
@@ -148,8 +177,8 @@ detail::router<M, 0, void, void> make()
 template<class M>
 void next(std::string url, M &imessage)
 {
-    auto searcher
-        = reinterpret_cast<detail::searcher<M>*>(imessage.handler_index);
+    auto searcher = reinterpret_cast<detail::searcher<M>*>
+        (detail::get_handler_index(imessage));
     searcher->do_thing(url, imessage);
 }
 

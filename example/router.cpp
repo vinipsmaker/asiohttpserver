@@ -128,6 +128,8 @@ private:
 
 int main()
 {
+    typedef http::declare_message<http::headers, vector<uint8_t>,
+                                  http::static_router::with_index> my_message_t;
     my_message_t imessage;
 
     auto router = http::static_router::make<my_message_t>()
