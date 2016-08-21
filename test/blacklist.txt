@@ -1,0 +1,16 @@
+# Ignore reports that are not our fault
+#src:/usr/include/c[+][+]/5.3.0/bits/stl_tree.h
+#src:/usr/include/c[+][+]/5.3.0/bits/stl_map.h
+#src:/home/travis/build/vinipsmaker/asiohttpserver/test/catch.hpp
+fun:_GLOBAL__sub_I_request_good.cpp
+fun:_GLOBAL__sub_I_request_bad_a.cpp
+fun:_GLOBAL__sub_I_request_bad_b.cpp
+fun:_GLOBAL__sub_I_response.cpp
+fun:_GLOBAL__sub_I_chunk_size.cpp
+fun:_GLOBAL__sub_I_content_length.cpp
+fun:_GLOBAL__sub_I_common.cpp
+fun:_GLOBAL__sub_I_utils.cpp
+fun:_GLOBAL__sub_I_request_response_common.cpp
+fun:_GLOBAL__sub_I_errc.cpp
+fun:_GLOBAL__sub_I_algorithm.cpp
+fun:_GLOBAL__sub_I_datetime.cpp

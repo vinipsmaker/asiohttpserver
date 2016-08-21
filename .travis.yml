@@ -80,20 +80,30 @@ matrix:
         - sudo apt-get update -qq
         - sudo apt-get install -qq g++-4.9
 
-#    - os: linux
-#      env: CC=clang-3.8 CXX=clang++-3.8 CXXFLAGS="-g -O1 -fsanitize=memory -fno-omit-frame-pointer -fno-optimize-sibling-calls -fsanitize-memory-track-origins=2"
-#      addons: &clang38
-#        apt:
-#          packages:
-#            - clang-3.8
+    - os: linux
+#      env: CC=clang-3.8 CXX=clang++-3.8 CXXFLAGS="-g -O1 -fsanitize=memory -fPIE -pie -fno-omit-frame-pointer -fno-optimize-sibling-calls -fsanitize-memory-track-origins=2 -fsanitize-blacklist=/home/travis/build/vinipsmaker/asiohttpserver/test/blacklist.txt"
+      env: CC=clang-3.8 CXX=clang++-3.8 CXXFLAGS="-g -O1 -fsanitize=memory -fno-omit-frame-pointer -fno-optimize-sibling-calls -fsanitize-memory-track-origins=2 -Wl,-rpath,/home/travis/build/vinipsmaker/asiohttpserver/libcxx_msan/lib"
+      addons: &clang38
+        apt:
+          packages:
+            - clang-3.8
+            - libc++1
+            - libc++abi1
 #            - g++-5
 #            - libstdc++-5-dev
-#          sources:
-#            - llvm-toolchain-trusty-3.8
+          sources:
+            - llvm-toolchain-trusty-3.8
 #            - ubuntu-toolchain-r-test
-#      install:
+      install:
 #        - sudo apt-get update -qq
 #        - sudo apt-get install -qq g++-4.9
+        - svn co -q http://llvm.org/svn/llvm-project/llvm/tags/RELEASE_381/final llvm
+        - (cd llvm/projects && svn co -q http://llvm.org/svn/llvm-project/libcxx/tags/RELEASE_381/final libcxx)
+        - (cd llvm/projects && svn co -q http://llvm.org/svn/llvm-project/libcxxabi/tags/RELEASE_381/final libcxxabi)
+        - mkdir libcxx_msan && cd libcxx_msan
+        - cmake ../llvm -DCMAKE_BUILD_TYPE=Release -DLLVM_USE_SANITIZER=Memory -DCMAKE_C_COMPILER=clang-3.8 -DCMAKE_CXX_COMPILER=clang++-3.8
+        - make cxx -j3
+        - cd ..
 
     - os: linux
       env: CC=clang-3.8 CXX=clang++-3.8 CXXFLAGS="-g -O1 -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls" ASAN_OPTIONS=check_initialization_order=1
